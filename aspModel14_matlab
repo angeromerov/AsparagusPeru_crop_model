@@ -1,0 +1,373 @@
+Spyder Editor
+
+autor : Alan Gay and Angela Romero 
+year : 2018 to 2021
+"""
+"""
+dormancy break if mean temp(tm)is above base for 7 d
+input reads mean temp and W/m2 for each day data 
+or provides 50 constant temperature (entered) values in the first question
+dormancy break on 7 days above tb for temperatures used
+below does not use lag phase approach of Wilson, but carries on growing
+each spear individually to nominated length and then starts leaf area 
+expansion until maxreached hence old ttlag not used
+"""
+import pandas
+import numpy as np
+"PARAMETERS"
+
+"Wilson parameters"
+D=12.6;    #depth of roots cm
+C=0.02232; #exponential growth rate
+tb=7.1;    #base temp C
+#nd=1;%number of successive days when mean temp is above T=tb to break dormancy proceso inecesario CAMBIAR
+fwm=0.5523;  #coefficient to convert volume to fwt ditto
+f2dw=0.09;   #fresh wt to dry wt conversion 
+coneff=0.7;  #efficiency of conversion of stored cho to spear dry wt
+extcoef=0.6; # Beers law extinction coefficient
+par2mj=1.5; #conversion coefficent for radiation interception to dy wy g per MJ
+            #CAMBIAR A W/M2
+chostart=750; #root biomass starting level of wsc per plant, max in wison paper
+
+"Thermal time parameters"
+tbinit=16; #10% of calculated thermal time from initiation to
+#havest at hspear using C above, see model.xls, value revised 181003
+
+#ttlag1=80; % tt=hermal time lag of spear extension before bracts open 
+           #after harvest stops.
+#ttlag2=ttlag1+190;% further thermal time after above for full canopy expansion
+lagr=15.7895; # 0.3/190*10000= 15.7895 canopy area cm2 per shoot/thermal time to form area
+lwgr=0.2284;# =total wt per stalk 500g, mean wt of spear at stop at extension stop
+             # 124g (caused by overshoot of max length based on daily interval
+             # in thermal time calculation and model loop)thius adjusted
+             # manually, see model xlsx for details
+             
+"Yield and CHO parameters"
+Ls=1;#assumed length of bud at start of growth, cm (guess)
+     #L stores updated list of lengths of spears each day until harvest
+     #if changed update value in new spear added (~54 on)"
+L_harvest=22;  #above ground length of spear at harvest
+Lmaxshoot=132; # maximum length of spear after cutting stops in canopy
+               # formation phase adjusted because of daily thermal time
+               # related overshoot to give mean spear length of about 150cm 
+maxash=3000; # maximum area per shoot
+#rad = 0.6155; % radius of spear cm from Morrison's sample            
+# hend is fixed day for harvest end defined for each data set
+endharvest=47; #end of harvest CAMBIAR POR BRIX
+endCHO=169;# CHAPODO DATE end of carbon accumulation caused by cut canopy CAMBIA A FECHA
+pm2=2; # plants per square metre 31200 plants/ha or plant density
+#Ws = 450;% g/plant medium crop structural CHO roots
+#CHOc = 400; % current value mg/g or Brix 400 mg/g = 16 brix
+#CHOb = 200; % CHO min mg/ g = 12.2 brix
+#Cs = 0.095 *(CHOc -CHOb)*(Ws+CHOstart);
+
+
+z=input('value and return for constant temp or enter for return to load data? > ');
+if isempty(z);
+    df=dir('*.mat');
+    for ii=1:length(df);
+        disp([num2str(ii) '   ' df(ii).name]);end
+    dff=input('Ref no of met file to use? > '); 
+    load(df(dff).name);dffn=df(dff).name(4:11);
+end
+if ~isempty(z); 
+    Tm=ones(80,1)*z;end
+ds=length(Tm(startcamp:endCHO));#total days of temperature data
+
+z = input(mstring('value and return for constant temp or enter for return to load data? > '))
+if isempty(z):
+    df = dir(mstring('*.mat'))
+    for ii in mslice[1:length(df)]:
+        disp(mcat([num2str(ii), mstring('   '), df(ii).name]))
+    end
+    dff = input(mstring('Ref no of met file to use? > '))
+    load(df(dff).name)
+    dffn = df(dff).name(mslice[4:11]); print dffn
+
+end
+if not isempty(z):
+    Tm = ones(80, 1) * z
+end
+
+total("days")
+of("temperature")
+data
+
+%calculate daily thermal times and set negative values to zero
+% otherwise we get negative growth below. Also cumulate values.
+thermalt=Tm(startcamp:endCHO)-Tb;
+%ttz= thermalt >= 0;%tt2 now thermalt
+%thermalt=thermalt.*ttz;% 
+ttcum=cumsum(thermalt);
+newSn=1;% youngest shoot growing
+oldSn=1;
+hSn=0;% harvest of sn
+
+% start by finding when n successive days above tb = 7.1 to start spear growth
+for i=1:ds
+ x=sum(Tm(i:i+nsucesivedays-1)>=Tb);
+ if x==nsucesivedays;
+     disp(num2str([Tb,i]));break;end
+end
+
+%set up plotting and record growth start params for start of spear growth
+ L=Ls;%Ls=1 shoot lenght to harvets 22 cm
+ px(1)= i+nsucesivedays-1;%days of year = cycle length
+ py(1,1)=L-D;
+ ttini_newS=ttcum(i+nsucesivedays-1)+Tbini;
+ pndayS=1;% number of days after start to growth
+ vol=(pi*rad^2)*L;
+ freshWto=vol*fwm;% g fresh mass
+ dryW=freshWto*f2dw;% g of dry mass
+ CHOused(1)= dryW/conv_effi;
+ 
+%Loop round days when spears are harvested until endHarvest
+for j=i+nsucesivedays:ds
+   %disp([ttcum(j) ttgthst]);
+   pndayS=pndayS+1;
+   px(pndayS,1)=j;
+   % loop around each shoot growing on day and increase length
+    for k=oldSn:newSn          
+      L(k)=L(k)*exp(c*thermalt(j));
+      L_oversoil(k)=L(k)-D; 
+      py(pndayS,k)=L_oversoil(k); 
+    end
+     % lines below add new spear above threshold of thermal time 
+     % tbinit time for spear to get to harvest length hspear, set L
+    if ttcum(j) > ttini_newS;
+        newSn=newSn+1;
+        ttini_newS=ttini_newS+Tbini;
+        L(newSn)=Ls;
+        py(pndayS,newSn)=1-D;end
+     % Harvest spears above hspear  
+     if py(pndayS,oldSn)>L_harvest;
+         hSn(pndayS)=oldSn; 
+         oldSn=oldSn+1;end
+     
+     
+     % Replace zeros by NaN to avoid sum and plot errors
+     pyz=find(py==0);py(pyz)=NaN; 
+     hSnz=find(hSn==0);hSn(hSnz)=NaN;
+     %now calculate total length produced to date and dry wt
+     sigmal=max((py(1:pndayS,:)+D));
+     cuml=sum(sigmal);
+     % below assumes 0.09 is dry matter content and fw estimated from
+     % volume, based on rough measurements
+     vol=cuml*pi*rad^2;
+     freshWto=vol*fwm;
+     dryW=freshWto*f2dw;%g /plant
+     CHOused(pndayS)= dryW/conv_effi;
+      % put break condition here to stop harvest
+      if j>endHarvest; 
+          fwharv=freshWto;
+          wsendh=CHOstart-CHOused(pndayS); break; end 
+end
+
+% now grow spears until they start to form canopy and then form canopy
+
+disp('canopy growth here (g/plant)')
+% continue spear extension during lag phase
+% save start thermal time and caculate end of lags
+%ttlagst1=ttcum(j)+ttlag1;ttlagst2=ttcum(j)+ttlag2;
+annx=0;
+A(oldSn:newSn)=0;
+W(oldSn:newSn)=0;
+maxsn=newSn;
+minsn=oldSn;
+Ay(oldSn:newSn)=0;
+Wy(oldSn:newSn)=0;
+ann=minsn;an=minsn-1;
+for jj=j+1:ds
+     pndayS=pndayS+1;px(pndayS,1)=jj;
+   % loop around each shoot growing on day and increase length
+   if oldSn<=maxsn
+    for k=oldSn:newSn          
+      L(k)=L(k)*exp(c*thermalt(j));
+      L_oversoil(k)=L(k)-D; 
+      py(pndayS,k)=L_oversoil(k); 
+    end
+    % Replace zeros by NaN to avoid sum and plot errors
+     pyz=find(py==0);py(pyz)=nan; 
+     %now calculate total length produced to date and dry wt
+     sigmal=max((py(1:pndayS,:)+D));
+     cuml=sum(sigmal);
+     % below assumes  dry matter content and fw estimated from peru
+     % asparagus form tesco and morrison
+     % volume, based on rough measurements
+     vol=(cuml*pi*rad^2)/3;
+     freshWstem= vol*fwm;
+     dryWstem=freshWstem*fsteamdw;
+     CHOstem(pndayS)= dryWstem/conv_effi;
+     
+      
+     % because of fast growth at this stage this value (132) may need lowering
+     % to get correct average spear length for start of leaf expansion
+     if py(pndayS,oldSn)>132;
+         an=an+1;oldSn=oldSn+1;annx=1;end 
+   end
+     if annx>0;
+         for h=ann:an %grow area and lf wt for all shoots over 155
+             A(h)=A(h)+thermalt(jj)*AreaS;                       
+             Ay(pndayS,h)=A(h);
+             
+             W(h)=W(h)+thermalt(jj)*lwgr; % was 0.2543 ;
+             Wy(pndayS,h)=W(h);
+             %check for max area to stop spear area inc
+             if A(h)> AmaxS; ann=ann+1; end
+         end
+         sigmaa=max(Ay(1:pndayS,:));
+         cuma=sum(sigmaa);
+         ar(pndayS)=cuma;
+         sigmaw=max(Wy(1:pndayS,:));
+         cumw=sum(sigmaw)*0.31;% 31% dry mass caldos nazca field work
+         CHOusedcanopy(pndayS)=cumw/conv_effi; % g CHO / day. 14.3
+     end
+      % if no spears growing break
+     if ann>maxsn;break,end
+end
+%Ws = 450;% g/plant medium crop structurla CHO roots
+%CHOb = 200; % CHO min mg/ g = 12.2 brix
+%CHOstart=300; % g/plant medium crop storage CHO roots CHOstart
+%k= CHOusedcanopy(pndayS) /(CHOused- CHOb)*(Ws+CHOstart);
+
+%CHOc = 400; % current value mg/g or Brix 400 mg/g = 16 brix
+%
+%Cs = 0.095 *(CHOc - CHOb)*(Ws+CHOstart);
+%total carbon used to grow canopy
+%CHOusedcanopy by 2 because fruits have the same valuae of dry mass
+%[CHOused,ones(1,length(CHOusedcanopy)-length(CHOused))*max(CHOused)]+(CHOusedcanopy*2)+CHOusedstem;
+%(1,end) take the last value wich is the acumulate during all process
+CHOstem(1,endHarvest+1)=CHOused(1,end);%to add last value of other matrix and graph continue
+CHOusedto= CHOused (1,end);%just steam
+CHOusedcanopyto= CHOusedcanopy (1,end);% to including fruit *2 and ferm
+CHOusedstemto = CHOstem(1,end);
+CHOto= CHOusedto  + CHOusedcanopyto + CHOusedstemto;
+%CHOtograph= CHOused .+
+% now canpoy growth is completed work out CHO returned to root store
+% before cut canopy "chapodo
+
+ar=ar/10000;%convert area to m^2.
+ar2=ar*plantm2;%assumes 2 plants/m2
+laimax=max(ar2);
+laistart=find(ar2,1);% when canopy>0 from growth start days
+lstdy=px(laistart); % ar day in yr when canopy starts
+lenddy=length(ar); % when canopy production stops from growth start days
+lai=ar2(laistart:end);% values for LAI during leaf production
+laistop=endCHO-px(lenddy);% end by date of frost (d in y)
+laicalc=length(lai)+1;%then pad lai to frost with max lai
+lai(laicalc:laicalc+laistop-1)=ones(1,laistop)*laimax;
+%fpar for canopy, then per plant export to root store ,assumes same conneff 
+fpar=1-exp(-extcoef*lai);
+biomass=((1/plantm2)*conv_effi*fpar.*Mj(lstdy:endCHO)')/(par2mj);
+% above assumes no senescence and no reduced efficiency from low temp
+wscin=sum(biomass);
+
+% calculation of net CHO balance
+px2=[px;(max(px)+1:endCHO)'];
+chobal=CHOstart-CHOusedstemto-CHOusedto;
+chobal(length(chobal)+1:length(px2))= min(chobal);
+chobal2=chobal;
+chobal2(laistart:end)=chobal(laistart:end)+cumsum(biomass);
+
+%plot(px2,chobal2,'g-')
+wslow=min(chobal);
+wsendc= min(chobal)+(wscin*0.9);
+
+disp('Total spears harvested');
+disp(hSn(1,end));
+disp('fresh weight spears harvested');
+disp(fwharv);
+disp('CHO in roots at the end of the harvest');
+disp(wsendh);
+disp('Min CHO in roots');
+disp(wslow);
+disp('CHO translocated total');
+disp(wscin);
+disp('CHO storage at the end of the campaign');
+disp(wsendc); 
+
+
+% % plotting of results
+% % spear extension growth
+plot(px(1:size(py,1)),py);minx=min(px);maxx=max(px);xlim([minx maxx]);
+hold on; plot([minx maxx],[0 0],'k--');
+xlabel('Days after start campaign');ylabel('Height above ground surface, cm');
+if isempty(z);title(['Potential Asparagus spear growth per plant, data ' dffn]);end
+if ~isempty(z);title(['Potential Asparagus spear growth per plant, constant ' num2str(z) 'C']);end
+% figure;plot(1:endHarvest+1,CHOused,endHarvest+1:length(CHOstem),CHOstem((1,endHarvest+1):CHOstem(1,end)));
+#####
+plot(px(mslice[1:size(py, 1)]), py)
+minx = min(px); print minx
+maxx = max(px)
+xlim(mcat([minx, maxx]))
+
+hold("on")
+plot(mcat([minx, maxx]), mcat([0, 0]), mstring('k--'))
+
+xlabel(mstring('D'))
+ylabel(mstring('H, cm'))
+
+if isempty(z):
+    title(mcat([mstring('Pnt, data '), dffn]))
+end
+if not isempty(z):
+    title(mcat([mstring('Pnt '), num2str(z), mstring('C')]))
+end
+#####
+% %Area per stalk
+ayz=find(Ay==0);Ay(ayz)=NaN;
+figure;plot(px,Ay);
+legend('Area per stalk cm^2','Location','NorthWest');
+xlabel('Days after start campaign');ylabel('Area per stalk cm^2');
+if ~isempty(z);title(['Potential Asparagus canopy growth, constant ' num2str(z) 'C']);end
+if isempty(z);title(['Potential Asparagus canopy growth, data ' dffn]);end
+% 
+% 
+% %Number  of spears
+plot(px(1:length(hSn)),hSn,'ro');
+ylabel(' Number spears harvested /plant');
+xlabel('Days after start campaign');
+if ~isempty(z);title(['Potential Asparagus , constant ' num2str(z) 'C']);end
+if isempty(z);title(['Potential Asparagus spear production , data ' dffn]);end
+% 
+% 
+% % Weight per stalk
+wyz=find(Wy==0);Wy(wyz)=NaN;
+figure;plot(px,Wy); 
+ylabel(' Canopy weight per shoot (g)');
+xlabel('Days after start campaign');
+if ~isempty(z);title(['Canopy weight, constant ' num2str(z) 'C']);end
+if isempty(z);title([' Canopy weight, data ' dffn]);end
+% 
+% %total area per plant
+figure;plot(px,ar);
+ylabel('Total area per plant m^2');
+xlabel('Days after start campaign');
+if ~isempty(z);title(['Potential Asparagus canopy area, constant ' num2str(z) 'C']);end
+if isempty(z);title(['Potential Asparagus canopy area, data ' dffn]);end
+
+% % wsc balance  sheet
+figure;plot(1:endHarvest+1,CHOused ,endHarvest+1:length(CHOstem),CHOstem((endHarvest+1):length(CHOstem)));
+hold on;plot(1:length (CHOusedcanopy),CHOusedcanopy,lstdy:endCHO,cumsum(biomass),'g-');xlabel('Days after start campaign')
+legend('CHO spear','CHO stem elongation', 'CHO canopy fern','CHO produced by canopy fern','Location','NorthWest');
+ylabel('CHO used g/plant');
+if ~isempty(z);title(['Potential Asparagus CHO balance per plant, constant ' num2str(z) 'C']);end
+if isempty(z);title(['Potential Asparagus CHO balance per plant, data ' dffn]);end
+%%%% hasta lo anterior  es la grafica  funcional
+
+% figure;plot(1:endHarvest+1,CHOused,endHarvest:length(biomass),CHOstart-CHOused);
+% figure;plot(px,chostart-totcho,px(1:size(py,1)),chostart-choused);
+% hold on;
+% plot(px2,chobal2,'g-');xlabel('Days after start campaign');
+% legend('spear and canopy growth','spear growth', 'growth less assimilation','Location','SouthWest');
+% ylabel('WSC remaining in store g/plant');
+% if ~isempty(z);title(['WSC reserves per plant less used in  ..., constant ' num2str(z) 'C']);end
+% if isempty(z);title(['WSC reserves per plant less used in  ..., data ' dffn]);end
+
+% % % wsc sums
+% figure;plot(px,CHOusedstem,px(1:size(py,1)),CHOused,lstdy:endCHO,cumsum(biomass));
+% xlabel('Days after start campaign');
+% legend('Total WSC used','WSC used in spear production', 'WSC produced','Location','NorthWest');
+% ylabel('WSC used or stored g/plant');
+% if ~isempty(z);title(['Potential Asparagus WSC used or stored per plant, constant ' num2str(z) 'C']);end
+% if isempty(z);title(['Potential Asparagus WSC used or stored per plant, data ' dffn]);end
