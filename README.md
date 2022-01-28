@@ -5,20 +5,20 @@ We developed “ASPeru” a mechanistic crop model coded in Python which include
 This repository contains the following folders:
 - **Crop model** : A script 
 
-- **prepare data to train model** : To prepare 3 datasets (training, validation and testing) used for developing the classification model.
+- **Spear analisys** : To determine spear growth rate used for lenght prediction.
 
-- **trained models**: Two convolutional neural networks were trained and the trained weights can be used in the Caffe platform for doing classification.
+- **aa**: Two convolutional neural networks were trained and the trained weights can be used in the Caffe platform for doing classification.
 
-- **silique counting** : reconstructs the plant image to detect and count the silique numbers on the whole plant image.
+- **aaa** : reconstructs the plant image to detect and count the silique numbers on the whole plant image.
 
 -------------------------------------------------------------------------------------------------
-- To do annotation refer to **Annotation-Toolbox**.
+- To do annotation refer to **aa**.
 
-- To train  the model from scratch refer to **prepare data to train model**.
+- To train  the model from scratch refer to **aa**.
 
-- To use the trained models  **trained models**.
+- To use the trained models  **aa**.
 
-- To count the number of siliques, and extract several quantitative phenotype information refer to **silique counting**.
+- To count the number of siliques, and extract several quantitative phenotype information refer to **aa**.
 
 **Requirements**
 - Python  2016 v3.6 or above.
