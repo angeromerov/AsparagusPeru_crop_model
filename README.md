@@ -7,9 +7,8 @@ This repository contains the following folders:
 
 - **Spear analisys** : To determine spear growth rate used for lenght prediction.
 
-- **aa**: Two convolutional neural networks were trained and the trained weights can be used in the Caffe platform for doing classification.
+- **Matlab version**: A preliminar version .
 
-- **aaa** : reconstructs the plant image to detect and count the silique numbers on the whole plant image.
 
 -------------------------------------------------------------------------------------------------
 - To do annotation refer to **aa**.
