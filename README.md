@@ -11,13 +11,6 @@ This repository contains the following folders:
 
 
 -------------------------------------------------------------------------------------------------
-- To do annotation refer to **aa**.
-
-- To train  the model from scratch refer to **aa**.
-
-- To use the trained models  **aa**.
-
-- To count the number of siliques, and extract several quantitative phenotype information refer to **aa**.
 
 **Requirements**
 - Python  2016 v3.6 or above.
