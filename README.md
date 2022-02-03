@@ -6,6 +6,8 @@ This repository contains the following folders:
 - **Asparagus crop model** : ASPmodel contains files required to use the crop model in python
 
 - **Spear analisys** : To determine spear growth rate used for lenght prediction.
+-
+-  **Results and validation** : To determine the error for yield and brix prediction.
 
 - **Matlab version**: A preliminar version .
 
