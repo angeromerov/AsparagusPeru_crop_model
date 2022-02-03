@@ -5,7 +5,7 @@ We developed “ASPeru” a mechanistic crop model coded in Python which include
 This repository contains the following folders:
 -  **Results and validation** : To determine the error for yield and brix prediction.
 -  **Spear analisys** : To determine spear growth rate used for lenght prediction.
-- **Asparagus crop model** : the .rar  ASPmodel contains files required to use the crop model in python
+- **Asparagus crop model** : ASPmodel.rar contains files required to use the crop model in python
 - **Matlab version**: A preliminar version .
 
 -------------------------------------------------------------------------------------------------
